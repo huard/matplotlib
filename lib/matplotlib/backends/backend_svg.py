@@ -735,7 +735,7 @@ class RendererSVG(RendererBase):
             im.resize(numcols, numrows)
 
         h,w = im.get_size_out()
-
+        oid = getattr(im, '_gid', None)
         url = getattr(im, '_url', None)
         if url is not None:
             self.writer.start('a', attrib={'xlink:href': url})
@@ -745,6 +745,7 @@ class RendererSVG(RendererBase):
             rows, cols, buffer = im.as_rgba_str()
             _png.write_png(buffer, cols, rows, stringio)
             im.flipud_out()
+            oid = oid or self._make_id('image', stringio)
             attrib['xlink:href'] = ("data:image/png;base64,\n" +
                                     base64.encodestring(stringio.getvalue()))
         else:
@@ -755,8 +756,11 @@ class RendererSVG(RendererBase):
             rows, cols, buffer = im.as_rgba_str()
             _png.write_png(buffer, cols, rows, filename)
             im.flipud_out()
+            oid = oid or 'Im_' + self._make_id('image', filename)
             attrib['xlink:href'] = filename
 
+        attrib['id'] = oid
+        
         if transform is None:
             self.writer.element(
                 'image',
