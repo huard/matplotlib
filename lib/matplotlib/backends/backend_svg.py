@@ -748,7 +748,7 @@ class RendererSVG(RendererBase):
             im.resize(numcols, numrows)
 
         h,w = im.get_size_out()
-
+        oid = getattr(im, '_gid', None)
         url = getattr(im, '_url', None)
         if url is not None:
             self.writer.start(u'a', attrib={u'xlink:href': url})
@@ -758,9 +758,12 @@ class RendererSVG(RendererBase):
             rows, cols, buffer = im.as_rgba_str()
             _png.write_png(buffer, cols, rows, bytesio)
             im.flipud_out()
+
+            oid = oid or self._make_id('image', stringio)
             attrib[u'xlink:href'] = (
                 u"data:image/png;base64,\n" +
                 base64.b64encode(bytesio.getvalue()).decode('ascii'))
+
         else:
             self._imaged[self.basename] = self._imaged.get(self.basename,0) + 1
             filename = u'%s.image%d.png'%(self.basename, self._imaged[self.basename])
@@ -769,12 +772,16 @@ class RendererSVG(RendererBase):
             rows, cols, buffer = im.as_rgba_str()
             _png.write_png(buffer, cols, rows, filename)
             im.flipud_out()
-            attrib[u'xlink:href'] = filename
 
+            attrib[u'xlink:href'] = filename
+            oid = oid or 'Im_' + self._make_id('image', filename)
+            
         alpha = gc.get_alpha()
         if alpha != 1.0:
             attrib['opacity'] = str(alpha)
 
+        attrib['id'] = oid
+        
         if transform is None:
             self.writer.element(
                 u'image',
